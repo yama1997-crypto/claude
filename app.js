@@ -85,7 +85,6 @@ function setupEventListeners() {
   textbookModal.addEventListener('click', e => { if (e.target === textbookModal) textbookModal.classList.add('hidden'); });
 
   $('addTextbookBtn').addEventListener('click', handleAddTextbook);
-  newTextbookInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAddTextbook(); });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
