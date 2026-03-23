@@ -1,7 +1,7 @@
 'use strict';
 
 // ===== ストレージ =====
-const STORAGE_KEYS = { sessions: 'study_sessions', subjects: 'study_subjects' };
+const STORAGE_KEYS = { sessions: 'study_sessions', subjects: 'study_subjects', textbooks: 'study_textbooks' };
 
 function loadData(key) {
   try { return JSON.parse(localStorage.getItem(key)) || null; } catch { return null; }
@@ -13,11 +13,15 @@ function saveData(key, data) {
 
 // ===== 状態 =====
 let subjects = loadData(STORAGE_KEYS.subjects) || [
-  { id: 's1', name: '数学', color: '#4f8ef7' },
-  { id: 's2', name: '英語', color: '#27ae60' },
-  { id: 's3', name: '理科', color: '#e84040' },
-  { id: 's4', name: '社会', color: '#f5a623' },
+  { id: 's1', name: '財務会計論', color: '#4f8ef7' },
+  { id: 's2', name: '管理会計論', color: '#27ae60' },
+  { id: 's3', name: '監査論',     color: '#7c3aed' },
+  { id: 's4', name: '企業法',     color: '#f5a623' },
+  { id: 's5', name: '租税法',     color: '#e84040' },
+  { id: 's6', name: '経営学',     color: '#0891b2' },
 ];
+
+let textbooks = loadData(STORAGE_KEYS.textbooks) || [];
 
 let sessions = loadData(STORAGE_KEYS.sessions) || [];
 
@@ -35,17 +39,21 @@ const timerDisplay  = $('timerDisplay');
 const startBtn      = $('startBtn');
 const pauseBtn      = $('pauseBtn');
 const stopBtn       = $('stopBtn');
-const subjectSelect = $('subjectSelect');
-const sessionNote   = $('sessionNote');
-const todayDate     = $('todayDate');
-const subjectModal  = $('subjectModal');
-const newSubjectInput = $('newSubjectInput');
-const newSubjectColor = $('newSubjectColor');
+const subjectSelect  = $('subjectSelect');
+const textbookSelect = $('textbookSelect');
+const sessionNote    = $('sessionNote');
+const todayDate      = $('todayDate');
+const subjectModal   = $('subjectModal');
+const textbookModal  = $('textbookModal');
+const newSubjectInput  = $('newSubjectInput');
+const newSubjectColor  = $('newSubjectColor');
+const newTextbookInput = $('newTextbookInput');
 
 // ===== 初期化 =====
 function init() {
   todayDate.textContent = formatDate(new Date());
   renderSubjectSelect();
+  renderTextbookSelect();
   renderTodayStats();
   renderSessionList();
   renderWeeklyChart();
@@ -68,6 +76,16 @@ function setupEventListeners() {
 
   $('addSubjectBtn').addEventListener('click', handleAddSubject);
   newSubjectInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAddSubject(); });
+
+  $('manageTextbooksBtn').addEventListener('click', () => {
+    renderTextbookListModal();
+    textbookModal.classList.remove('hidden');
+  });
+  $('closeTextbookModalBtn').addEventListener('click', () => textbookModal.classList.add('hidden'));
+  textbookModal.addEventListener('click', e => { if (e.target === textbookModal) textbookModal.classList.add('hidden'); });
+
+  $('addTextbookBtn').addEventListener('click', handleAddTextbook);
+  newTextbookInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAddTextbook(); });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -114,11 +132,13 @@ function handleStop() {
     return;
   }
 
-  const subjectId = subjectSelect.value;
+  const subjectId  = subjectSelect.value;
+  const textbookId = textbookSelect.value || null;
   const note = sessionNote.value.trim();
   const session = {
     id: 'sess_' + Date.now(),
     subjectId,
+    textbookId,
     durationMs,
     note,
     date: new Date().toISOString(),
@@ -167,6 +187,19 @@ function renderSubjectSelect() {
     opt.textContent = sub.name;
     subjectSelect.appendChild(opt);
   });
+}
+
+// ===== 参考書セレクト =====
+function renderTextbookSelect() {
+  const prev = textbookSelect.value;
+  textbookSelect.innerHTML = '<option value="">― 参考書を選択 ―</option>';
+  textbooks.forEach(tb => {
+    const opt = document.createElement('option');
+    opt.value = tb.id;
+    opt.textContent = tb.name;
+    textbookSelect.appendChild(opt);
+  });
+  if (prev) textbookSelect.value = prev;
 }
 
 // ===== 今日の統計 =====
@@ -225,13 +258,17 @@ function renderSessionList() {
     }
 
     const sub = getSubject(sess.subjectId);
+    const tb  = sess.textbookId ? getTextbook(sess.textbookId) : null;
     const item = document.createElement('div');
     item.className = 'session-item';
+    const metaParts = [formatTime(new Date(sess.date))];
+    if (tb)       metaParts.push(`📖 ${escapeHtml(tb.name)}`);
+    if (sess.note) metaParts.push(escapeHtml(sess.note));
     item.innerHTML = `
       <span class="session-color-dot" style="background:${sub.color}"></span>
       <div class="session-info">
         <div class="session-subject">${sub.name}</div>
-        <div class="session-meta">${formatTime(new Date(sess.date))}${sess.note ? ' · ' + escapeHtml(sess.note) : ''}</div>
+        <div class="session-meta">${metaParts.join(' · ')}</div>
       </div>
       <span class="session-duration">${formatDurationHM(sess.durationMs)}</span>
       <button class="session-delete" data-id="${sess.id}" title="削除">✕</button>
@@ -384,6 +421,49 @@ function deleteSubject(id) {
   saveData(STORAGE_KEYS.subjects, subjects);
   renderSubjectSelect();
   renderSubjectListModal();
+}
+
+// ===== 参考書管理 =====
+function handleAddTextbook() {
+  const name = newTextbookInput.value.trim();
+  if (!name) { newTextbookInput.focus(); return; }
+  if (textbooks.some(tb => tb.name === name)) { alert('同じ名前の参考書が既に存在します。'); return; }
+
+  textbooks.push({ id: 'tb_' + Date.now(), name });
+  saveData(STORAGE_KEYS.textbooks, textbooks);
+  newTextbookInput.value = '';
+  renderTextbookSelect();
+  renderTextbookListModal();
+}
+
+function renderTextbookListModal() {
+  const list = $('textbookList');
+  list.innerHTML = '';
+  if (textbooks.length === 0) {
+    list.innerHTML = '<li style="color:var(--text-muted);font-size:0.88rem;padding:8px 0;">参考書が登録されていません</li>';
+    return;
+  }
+  textbooks.forEach(tb => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <span class="subject-list-name">📖 ${escapeHtml(tb.name)}</span>
+      <button class="btn btn-icon" data-del="${tb.id}" title="削除">🗑️</button>
+    `;
+    li.querySelector('[data-del]').addEventListener('click', () => deleteTextbook(tb.id));
+    list.appendChild(li);
+  });
+}
+
+function deleteTextbook(id) {
+  if (!confirm('この参考書を削除しますか？（記録は残ります）')) return;
+  textbooks = textbooks.filter(tb => tb.id !== id);
+  saveData(STORAGE_KEYS.textbooks, textbooks);
+  renderTextbookSelect();
+  renderTextbookListModal();
+}
+
+function getTextbook(id) {
+  return textbooks.find(tb => tb.id === id) || null;
 }
 
 // ===== ユーティリティ =====

@@ -405,6 +405,11 @@ select:focus { border-color: var(--primary); }
   background: none;
 }
 
+/* 参考書モーダルは色ピッカーなし → テキスト入力を広げる */
+#textbookModal .modal-add-row input[type="text"] {
+  flex: 1;
+}
+
 #subjectList {
   list-style: none;
   max-height: 240px;
