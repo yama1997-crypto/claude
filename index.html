@@ -24,6 +24,14 @@
           </div>
         </div>
 
+        <div class="subject-input-group">
+          <label for="textbookSelect">参考書</label>
+          <div class="subject-row">
+            <select id="textbookSelect"></select>
+            <button class="btn btn-secondary" id="manageTextbooksBtn">管理</button>
+          </div>
+        </div>
+
         <div class="timer-display" id="timerDisplay">00:00:00</div>
 
         <div class="timer-controls">
@@ -88,6 +96,19 @@
       </div>
       <ul id="subjectList"></ul>
       <button class="btn btn-secondary modal-close" id="closeModalBtn">閉じる</button>
+    </div>
+  </div>
+
+  <!-- 参考書管理モーダル -->
+  <div class="modal-overlay hidden" id="textbookModal">
+    <div class="modal">
+      <h3>参考書の管理</h3>
+      <div class="modal-add-row">
+        <input type="text" id="newTextbookInput" placeholder="参考書名（例：財務会計テキストⅠ）" />
+        <button class="btn btn-primary" id="addTextbookBtn">追加</button>
+      </div>
+      <ul id="textbookList"></ul>
+      <button class="btn btn-secondary modal-close" id="closeTextbookModalBtn">閉じる</button>
     </div>
   </div>
 
